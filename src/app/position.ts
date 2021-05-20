@@ -8,7 +8,7 @@ export class Position {
     }
 
     subtract(other: Position): Position {
-        let ret: Position;
+        let ret = new Position();
         ret.x = this.x - other.x;
         ret.y = this.y - other.y;
         return ret;

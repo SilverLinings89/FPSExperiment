@@ -1,6 +1,7 @@
 import { Position } from "./position";
 import { SpeedGroup } from "./speed-group.enum";
 import { SuccessRateDistribution } from "./success-rate-distribution.enum";
+import { SurfaceInteraction } from "./surface-interaction";
 
 export class Agent {
     current_direction: number;
@@ -13,7 +14,7 @@ export class Agent {
     won_engagements: number = 0;
     covered_distance: number = 0;
 
-    Agent(in_sg: SpeedGroup) {
+    constructor (in_sg: SpeedGroup, in_position: Position) {
         this.current_direction = 2 * Math.PI * Math.random();
         this.speed_group = in_sg;
         if(in_sg == SpeedGroup.NONE) {
@@ -28,11 +29,13 @@ export class Agent {
         this.is_alive = true;
         this.won_engagements = 0;
         this.covered_distance = 0;
+        this.current_position = in_position;
     }
 
-    move_to(location: Position) {
-        this.covered_distance += location.subtract(this.current_position).norm();
-        this.current_position = location;
+    move(si: SurfaceInteraction) {
+        this.covered_distance += this.current_position.subtract(si.new_position).norm();
+        this.current_position = si.final_position;
+        this.current_direction = si.process_angle(this.current_direction);
     }
 
     win_engagement() {
@@ -77,8 +80,12 @@ export class Agent {
         }
     }
 
-    distance_to(other_agent: Agent) {
-        return other_agent.current_position.subtract(this.current_position).norm();
+    distance_to_agent(other_agent: Agent) {
+        return this.distance_to_position(other_agent.current_position);
+    }
+
+    distance_to_position(in_p: Position) {
+        return in_p.subtract(this.current_position).norm();
     }
 
     engage(other_agent: Agent) {
