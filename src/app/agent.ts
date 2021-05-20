@@ -9,6 +9,9 @@ export class Agent {
     current_position: Position;
     turnrate: number = 0.1;
     speed_group: SpeedGroup;
+    is_alive: boolean = true;
+    won_engagements: number = 0;
+    covered_distance: number = 0;
 
     Agent(in_sg: SpeedGroup) {
         this.current_direction = 2 * Math.PI * Math.random();
@@ -22,18 +25,39 @@ export class Agent {
         if(in_sg == SpeedGroup.NONE) {
             this.current_velocity = 1.0;
         }
-        
+        this.is_alive = true;
+        this.won_engagements = 0;
+        this.covered_distance = 0;
+    }
+
+    move_to(location: Position) {
+        this.covered_distance += location.subtract(this.current_position).norm();
+        this.current_position = location;
+    }
+
+    win_engagement() {
+        this.won_engagements++;
+    }
+
+    die() {
+        this.is_alive = false;
     }
 
     update_velocity_and_angle() {
-        this.current_direction += this.turnrate * (Math.random()-0.5);
+        if(this.is_alive) {
+            this.current_direction += this.turnrate * (Math.random()-0.5);
+        }
     }
 
     compute_new_position(): Position {
-        let ret : Position = this.current_position;
-        ret.x += Math.cos(this.current_direction) * this.current_velocity;
-        ret.y += Math.sin(this.current_direction) * this.current_velocity;
-        return ret;
+        if(this.is_alive) {
+            let ret : Position = this.current_position;
+            ret.x += Math.cos(this.current_direction) * this.current_velocity;
+            ret.y += Math.sin(this.current_direction) * this.current_velocity;
+            return ret;
+        } else {
+            return this.current_position;
+        }
     }
 
     compute_success_rate(other_position: Position) {
@@ -55,5 +79,20 @@ export class Agent {
 
     distance_to(other_agent: Agent) {
         return other_agent.current_position.subtract(this.current_position).norm();
+    }
+
+    engage(other_agent: Agent) {
+        if(this.is_alive && other_agent.is_alive) {
+            let own_chance = this.compute_success_rate(other_agent.current_position);
+            let other_chance = other_agent.compute_success_rate(this.current_position);
+            let chance = Math.random() * (own_chance + other_chance);
+            if(chance < own_chance) {
+                this.win_engagement();
+                other_agent.die();
+            } else {
+                this.die();
+                other_agent.win_engagement();
+            }
+        }
     }
 }
